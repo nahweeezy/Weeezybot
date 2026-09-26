@@ -1,0 +1,25 @@
+{
+  "name": "weeezybot",
+  "version": "1.0.0",
+  "description": "Discord bot for an EA FC creator community: reaction XP, FC-style 45-99 ratings, rank-up announcements and auto-threads.",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "xp-table": "node scripts/print-xp-table.js",
+    "preview-cards": "node scripts/preview-cards.js",
+    "invite": "node scripts/invite-link.js",
+    "backup": "node scripts/backup-db.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.9",
+    "better-sqlite3": "^13.0.3",
+    "discord.js": "^14.27.0",
+    "zod": "^4.6.5"
+  }
+}

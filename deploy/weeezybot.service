@@ -1,0 +1,21 @@
+# systemd unit for Linux servers (Oracle Cloud, Hetzner, Raspberry Pi, ...).
+# Edit User and WorkingDirectory, then:
+#   sudo cp deploy/weeezybot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now weeezybot
+#   journalctl -u weeezybot -f        # live logs
+[Unit]
+Description=WeeezyBot Discord bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/weeezybot
+ExecStart=/usr/bin/env node src/index.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

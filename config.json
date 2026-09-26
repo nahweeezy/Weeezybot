@@ -1,0 +1,258 @@
+{
+  "adminRoleId": "1284909962329456781",
+  "allowDiscordAdministrators": true,
+  "xp": {
+    "channels": [
+      "1551065078411825193"
+    ],
+    "includeAutothreadChannels": true,
+    "emojiValues": {
+      "🔥": 3
+    },
+    "defaultEmojiXp": 1,
+    "pairCooldownHours": 24,
+    "oncePerMessage": true,
+    "simultaneousReactionWindowMs": 2000
+  },
+  "rating": {
+    "min": 45,
+    "max": 99,
+    "curve": {
+      "type": "anchors",
+      "anchors": [
+        {
+          "rating": 45,
+          "xp": 0
+        },
+        {
+          "rating": 75,
+          "xp": 300,
+          "easing": 1.6
+        },
+        {
+          "rating": 80,
+          "xp": 1000,
+          "easing": 1.3
+        },
+        {
+          "rating": 85,
+          "xp": 3000,
+          "easing": 1.2
+        },
+        {
+          "rating": 90,
+          "xp": 7000,
+          "easing": 1.2
+        },
+        {
+          "rating": 95,
+          "xp": 15000,
+          "easing": 1.2
+        },
+        {
+          "rating": 99,
+          "xp": 30000,
+          "easing": 1.2
+        }
+      ],
+      "table": {}
+    }
+  },
+  "tiers": [
+    {
+      "key": "bronze",
+      "name": "Bronze",
+      "minRating": 45,
+      "roleId": "1553422530654633994",
+      "color": "#CD7F32",
+      "emoji": "🟫",
+      "announcePromotion": false,
+      "card": {
+        "background": [
+          "#EDBB8A",
+          "#C0844F",
+          "#7A4A24"
+        ],
+        "border": "#5C3517",
+        "text": "#2B1709",
+        "accent": "#FFE3C4",
+        "pattern": "none"
+      }
+    },
+    {
+      "key": "silver",
+      "name": "Silver",
+      "minRating": 65,
+      "roleId": "1553422529421639682",
+      "color": "#B8C2CC",
+      "emoji": "⬜",
+      "announcePromotion": true,
+      "card": {
+        "background": [
+          "#F7F9FA",
+          "#C3CAD1",
+          "#7F8993"
+        ],
+        "border": "#5E6770",
+        "text": "#1C2127",
+        "accent": "#FFFFFF",
+        "pattern": "shine"
+      }
+    },
+    {
+      "key": "gold",
+      "name": "Gold",
+      "minRating": 75,
+      "roleId": "1553422527592931469",
+      "color": "#E8C04A",
+      "emoji": "🟨",
+      "announcePromotion": true,
+      "card": {
+        "background": [
+          "#FFF2AE",
+          "#E9C458",
+          "#B38A25"
+        ],
+        "border": "#7C5E12",
+        "text": "#33260A",
+        "accent": "#FFF8D6",
+        "pattern": "shine"
+      }
+    },
+    {
+      "key": "rare_gold",
+      "name": "Rare Gold",
+      "minRating": 85,
+      "roleId": "1553422526783295638",
+      "color": "#F5B700",
+      "emoji": "✨",
+      "announcePromotion": true,
+      "card": {
+        "background": [
+          "#FFF4B8",
+          "#F2C12E",
+          "#9C6B0B"
+        ],
+        "border": "#5E3F02",
+        "text": "#2A1C00",
+        "accent": "#FFFFFF",
+        "pattern": "rays"
+      }
+    },
+    {
+      "key": "elite",
+      "name": "Elite",
+      "minRating": 90,
+      "roleId": "1553422525831315547",
+      "color": "#D4AF37",
+      "emoji": "🖤",
+      "announcePromotion": true,
+      "card": {
+        "background": [
+          "#3A3A3A",
+          "#161616",
+          "#000000"
+        ],
+        "border": "#D4AF37",
+        "text": "#F3D57A",
+        "accent": "#D4AF37",
+        "pattern": "rays"
+      }
+    },
+    {
+      "key": "icon",
+      "name": "99 Icon",
+      "minRating": 99,
+      "roleId": "1553422524216516748",
+      "color": "#F2E6C2",
+      "emoji": "💎",
+      "announcePromotion": true,
+      "card": {
+        "background": [
+          "#FFFDF6",
+          "#F0E4C3",
+          "#C9AE6A"
+        ],
+        "border": "#A4812E",
+        "text": "#3A2D0E",
+        "accent": "#B8892A",
+        "pattern": "holo"
+      }
+    }
+  ],
+  "roles": {
+    "autoCreate": true,
+    "hoist": false,
+    "assignStartingTierOnJoin": true
+  },
+  "rankup": {
+    "postIn": "source",
+    "channelId": "",
+    "deleteAfterSeconds": 30,
+    "announceManualChanges": true,
+    "coalesceSeconds": 8,
+    "pingOnBump": true,
+    "pingOnPromotion": true,
+    "bumpMessage": "{mention} upgraded to **{newRating} OVR** 🔥",
+    "multiBumpMessage": "{mention} upgraded **{oldRating} → {newRating} OVR** 🔥",
+    "promotion": {
+      "content": "{mention}",
+      "title": "{tierEmoji} {tierName} PROMOTION {tierEmoji}",
+      "description": "{mention} upgraded **{oldRating} → {newRating} OVR** and is now **{tierName}**! 🔥",
+      "attachCard": true
+    }
+  },
+  "autothread": {
+    "channels": {
+      "1551534553640996874": {},
+      "1551061085971288136": {
+        "nameFormat": "{displayName}'s squad"
+      }
+    },
+    "defaults": {
+      "nameFormat": "{displayName}'s pull",
+      "mediaOnly": false,
+      "slowmodeSeconds": null,
+      "autoArchiveMinutes": 1440
+    },
+    "embedWaitMs": 4000,
+    "mediaLinkPatterns": [
+      "\\.(png|jpe?g|gif|webp|avif|mp4|mov|webm|mkv)(\\?|#|$)",
+      "[/.]youtube\\.com/",
+      "youtu\\.be/",
+      "[/.]tiktok\\.com/",
+      "[/.]twitch\\.tv/",
+      "streamable\\.com/",
+      "medal\\.tv/",
+      "imgur\\.com/",
+      "gyazo\\.com/",
+      "tenor\\.com/",
+      "giphy\\.com/",
+      "[/.](x|twitter)\\.com/.+/status/",
+      "instagram\\.com/(p|reel|reels)/",
+      "cdn\\.discordapp\\.com/attachments/",
+      "media\\.discordapp\\.net/attachments/"
+    ],
+    "mediaOnlyNotice": "Hey {displayName}! {channel} is media-only, so your text message was removed. Post a screenshot or clip and chat about it in the thread that opens under it. 🔥",
+    "mediaOnlyNoticeCooldownMinutes": 10,
+    "exemptRoleIds": [],
+    "threadBonus": {
+      "enabled": true,
+      "emoji": "🔥",
+      "xp": 3,
+      "cooldownHours": 24
+    },
+    "closeButton": {
+      "enabled": true,
+      "label": "Close thread",
+      "message": "Discuss {displayName}'s post here. {displayName}, tap the button when you're done.",
+      "lock": false
+    }
+  },
+  "leaderboard": {
+    "pageSize": 10
+  },
+  "card": {
+    "hotEmoji": "🔥"
+  }
+}
