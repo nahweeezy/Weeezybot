@@ -8,10 +8,10 @@
 import fs from 'node:fs';
 import { Client, Events, GatewayIntentBits } from 'discord.js';
 import { getConfig } from '../src/config.js';
-import { closeDb, databasePath, getLeaderboard, getProfile, openDb } from '../src/db.js';
+import { closeDb, databasePath, getAllRatings, getLeaderboard, getProfile, openDb } from '../src/db.js';
 import { readBotEnv } from '../src/env.js';
 import { rebuildFromGuild } from '../src/rebuild.js';
-import { syncAllMembers } from '../src/roles.js';
+import { syncUsers } from '../src/roles.js';
 import { formatNumber } from '../src/util.js';
 
 const argDays = process.argv.indexOf('--days');
@@ -76,12 +76,16 @@ client.once(Events.ClientReady, async () => {
     });
 
     if (process.env.REBUILD_SKIP_ROLES !== '1') {
-      console.log('\nUpdating tier roles...');
-      console.log('(Discord rate-limits role changes, so big servers take a while. The XP is already saved.)');
-      const r = await syncAllMembers(guild, {
-        onProgress: ({ checked, total, changed }) => console.log(`  roles: ${checked}/${total} members checked, ${changed} updated`),
-      });
-      console.log(`Checked ${r.checked} members, changed ${r.changed}${r.failed ? `, ${r.failed} failed` : ''}.`);
+      // Only members who have XP: everyone else is at the starting tier anyway, and walking the whole
+      // server is very slow because Discord rate-limits role changes. /config sync-roles does everyone.
+      const ids = [...getAllRatings().keys()];
+      console.log(`\nUpdating tier roles for ${ids.length} members with XP...`);
+      let done = 0;
+      for (const id of ids) {
+        await syncUsers(guild, [id], 'XP rebuild');
+        if (++done % 25 === 0) console.log(`  roles: ${done}/${ids.length}`);
+      }
+      console.log('Roles updated.');
     }
     console.log('\nDone. Start the bot normally again.');
   } catch (err) {
