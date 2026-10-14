@@ -57,6 +57,17 @@ const configSchema = z
       oncePerMessage: z.boolean(),
       simultaneousReactionWindowMs: z.number().int().min(0).max(60000),
     }),
+    // Flat XP for posting in a channel, per channel: { "<channelId>": { xp, cooldownHours, requires } }.
+    postBonus: z.record(
+      snowflake,
+      z.strictObject({
+        xp: z.number().int().min(0).max(10000),
+        cooldownHours: z.number().min(0).max(24 * 365),
+        requires: z.enum(['media', 'any']),
+      }),
+    ),
+    // XP multiplier for reactions and message XP per channel/category: { "<channelId>": 2 }.
+    channelMultipliers: z.record(snowflake, z.number().min(0).max(10)),
     // Chance-based XP for sending messages, capped by a per-member cooldown.
     messageXp: z.strictObject({
       enabled: z.boolean(),

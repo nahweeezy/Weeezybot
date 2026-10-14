@@ -7,6 +7,7 @@ import { readBotEnv } from './env.js';
 import { commandDefinitions, handleInteraction } from './interactions.js';
 import { log } from './logger.js';
 import { handleMessageXp } from './messageXp.js';
+import { handlePostBonus } from './channelBonuses.js';
 import { flushAllRankUps } from './rankup.js';
 import { startRecapSchedule, trackReactionAdd, trackReactionRemove, trackReactionRemoveAll, trackReactionRemoveEmoji } from './recap.js';
 import { flushAllReactionBatches, handleReactionAdd, xpChannelIds } from './reactionXp.js';
@@ -100,6 +101,7 @@ client.on(Events.MessageReactionRemoveEmoji, safely(trackReactionRemoveEmoji));
 client.on(Events.MessageCreate, (message) => {
   handleMessageCreate(message).catch((err) => log.error('Message handler failed:', err));
   handleMessageXp(message).catch((err) => log.error('Message XP failed:', err));
+  handlePostBonus(message).catch((err) => log.error('Post bonus failed:', err));
 });
 
 client.on(Events.GuildMemberAdd, (member) => {

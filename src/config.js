@@ -20,7 +20,7 @@ let lastDiskText = null; // file contents as of our last read/write
 const listeners = new Set();
 
 // Objects whose keys are user data (channel IDs, emojis, ratings), not settings: never fill these.
-const USER_RECORDS = new Set(['xp.emojiValues', 'autothread.channels', 'rating.curve.table']);
+const USER_RECORDS = new Set(['xp.emojiValues', 'autothread.channels', 'rating.curve.table', 'postBonus', 'channelMultipliers']);
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 /**

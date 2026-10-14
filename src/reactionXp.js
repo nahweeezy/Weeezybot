@@ -7,6 +7,7 @@
 //   4. Otherwise hold it briefly (xp.simultaneousReactionWindowMs) in case the giver adds more
 //      emojis at the same moment, then grant once using the highest-value emoji.
 // Removing a reaction is deliberately not handled: XP already granted stays granted.
+import { multiplied } from './channelBonuses.js';
 import { getConfig } from './config.js';
 import * as db from './db.js';
 import { emojiDisplay, emojiKey, emojiXpValue } from './emoji.js';
@@ -86,7 +87,7 @@ export async function handleReactionAdd(reaction, user) {
     messageId: message.id,
     channelId: channel.id,
     emojiDisplay: emojiDisplay(reaction.emoji),
-    amount: emojiXpValue(reaction.emoji, cfg),
+    amount: multiplied(emojiXpValue(reaction.emoji, cfg), channel, cfg), // channel multiplier (e.g. double XP)
     receivedAt,
   });
 }

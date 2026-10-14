@@ -65,7 +65,7 @@ client.once(Events.ClientReady, async () => {
     const s = await rebuildFromGuild(guild, { days });
     console.log(
       `\nScanned ${formatNumber(s.messages)} messages in ${s.channels} channels/threads. ` +
-        `${formatNumber(s.grants)} reaction grants + ${formatNumber(s.bonuses)} thread bonuses ` +
+        `${formatNumber(s.grants)} reaction grants + ${formatNumber(s.bonuses)} thread bonuses + ${formatNumber(s.posts)} post bonuses ` +
         `(${Math.round((Date.now() - started) / 1000)}s).`,
     );
 

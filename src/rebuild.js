@@ -4,11 +4,14 @@
 //    and forum posts), and every reaction on them. Messages in other channels are read for the
 //    last recap.lookbackDays days so the weekly recap has data too.
 // 2. Replay: feed those reactions through the normal XP rules in time order: one grant per
-//    giver -> receiver per cooldown window, highest emoji wins, the 🔥 thread bonus, etc.
+//    giver -> receiver per cooldown window, highest emoji wins, double-XP channels, the 🔥 thread
+//    bonus and per-channel post bonuses (e.g. +10 per tactic), each with its cooldown.
+// Random message XP can't be recreated, so it isn't part of the rebuild.
 //
 // Discord doesn't say WHEN a reaction was added, so each reaction is treated as if it happened
 // when its message was posted. Reactions that were removed can't be seen and aren't counted.
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
+import { grantPostBonus, multiplied, postBonusFor } from './channelBonuses.js';
 import { getConfig } from './config.js';
 import * as db from './db.js';
 import { emojiDisplay, emojiKey, emojiXpValue, normalizeEmoji } from './emoji.js';
@@ -88,13 +91,21 @@ export async function rebuildFromGuild(guild, { days, log = console.log }) {
 
   const reactionBatches = new Map(); // "giver:message" -> { time, candidates[] }
   const bonusEvents = [];
+  const postEvents = [];
   const stats = { channels: 0, messages: 0, reactions: 0 };
 
   async function scanMessage(message, channel, { xp, recap }) {
     stats.messages++;
     const author = message.author;
-    if (!author || author.bot || message.webhookId || message.system || !message.reactions.cache.size) return;
+    if (!author || author.bot || message.webhookId || message.system) return;
     const authorIsMember = members.has(author.id);
+
+    // Post bonus for the message itself (e.g. a new tactic in the tactics forum).
+    if (authorIsMember && message.createdTimestamp >= xpSince) {
+      const bonus = postBonusFor(message, channel, cfg);
+      if (bonus) postEvents.push({ time: message.createdTimestamp, message, bonus });
+    }
+    if (!message.reactions.cache.size) return;
     let order = 0;
 
     for (const reaction of message.reactions.cache.values()) {
@@ -148,7 +159,7 @@ export async function rebuildFromGuild(guild, { days, log = console.log }) {
           messageId: message.id,
           channelId: channel.id,
           emojiDisplay: emojiDisplay(reaction.emoji),
-          amount: emojiXpValue(reaction.emoji, cfg),
+          amount: multiplied(emojiXpValue(reaction.emoji, cfg), channel, cfg),
           receivedAt: message.createdTimestamp + order, // keeps "first emoji wins" ties stable
         });
       }
@@ -187,13 +198,19 @@ export async function rebuildFromGuild(guild, { days, log = console.log }) {
   const events = [
     ...[...reactionBatches.values()].map((b) => ({ ...b, kind: 'reaction' })),
     ...bonusEvents.map((b) => ({ time: b.time, candidates: [b.candidate], kind: 'thread_bonus' })),
+    ...postEvents.map((p) => ({ time: p.time, post: p, kind: 'post_bonus' })),
   ].sort((a, b) => a.time - b.time || (a.kind === b.kind ? 0 : a.kind === 'thread_bonus' ? -1 : 1));
 
   const reactionRules = { cooldownMs: cfg.xp.pairCooldownHours * 60 * 60 * 1000, oncePerMessage: cfg.xp.oncePerMessage };
   const bonusRules = { cooldownMs: bonus.cooldownHours * 60 * 60 * 1000, oncePerMessage: true, kind: 'thread_bonus' };
   let grants = 0;
   let bonuses = 0;
+  let posts = 0;
   for (const event of events) {
+    if (event.kind === 'post_bonus') {
+      if (grantPostBonus(event.post.message, event.post.bonus, event.time)) posts++;
+      continue;
+    }
     const rules = event.kind === 'thread_bonus' ? bonusRules : reactionRules;
     if (db.tryReactionGrant(event.candidates, { ...rules, now: event.time })) {
       if (event.kind === 'thread_bonus') bonuses++;
@@ -201,5 +218,5 @@ export async function rebuildFromGuild(guild, { days, log = console.log }) {
     }
   }
 
-  return { ...stats, grants, bonuses, members: members.size };
+  return { ...stats, grants, bonuses, posts, members: members.size };
 }

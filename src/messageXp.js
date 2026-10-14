@@ -3,6 +3,7 @@
 // The cooldown is stored in the database (pair_locks, with a fixed "giver" ID), so restarts don't reset it.
 import { MessageType } from 'discord.js';
 import { autothreadSettings, hasMedia } from './autothread.js';
+import { multiplied } from './channelBonuses.js';
 import { getConfig } from './config.js';
 import { isPairLocked, tryReactionGrant } from './db.js';
 import { guildId } from './env.js';
@@ -36,7 +37,7 @@ export async function handleMessageXp(message, { random = Math.random } = {}) {
       messageId: message.id,
       channelId: message.channelId,
       emojiDisplay: null,
-      amount: mx.xp,
+      amount: multiplied(mx.xp, message.channel, cfg),
       receivedAt: Date.now(),
     }],
     { cooldownMs, oncePerMessage: false, kind: 'message' },

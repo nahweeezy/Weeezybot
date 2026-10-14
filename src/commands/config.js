@@ -374,6 +374,56 @@ const handlers = {
     await i.editReply({ content: `Recap: ${status}.` });
   },
 
+  async 'postbonus.set'(i) {
+    const channel = i.options.getChannel('channel', true);
+    const xp = i.options.getInteger('xp', true);
+    const cooldownHours = i.options.getNumber('cooldown_hours', true);
+    const isForum = channel.type === ChannelType.GuildForum || channel.type === ChannelType.GuildMedia;
+    const requires = i.options.getString('requires') ?? (isForum ? 'any' : 'media');
+    updateConfig((d) => {
+      d.postBonus[channel.id] = { xp, cooldownHours, requires };
+    });
+    const what = isForum ? 'each new post' : requires === 'media' ? 'each picture/video post' : 'each message';
+    await respond(i, { content: `✅ <#${channel.id}>: +${xp} XP for ${what}, max once every ${cooldownHours}h per member.` });
+  },
+
+  async 'postbonus.remove'(i) {
+    const channel = i.options.getChannel('channel', true);
+    updateConfig((d) => {
+      delete d.postBonus[channel.id];
+    });
+    await respond(i, { content: `✅ No more post bonus in <#${channel.id}>.` });
+  },
+
+  async 'postbonus.list'(i) {
+    const lines = Object.entries(getConfig().postBonus).map(
+      ([id, r]) => `<#${id}> +${r.xp} XP · every ${r.cooldownHours}h · ${r.requires === 'media' ? 'picture/video needed' : 'any post'}`,
+    );
+    await respond(i, { content: lines.length ? `**Post bonuses**\n${lines.join('\n')}` : 'No post bonuses yet.' });
+  },
+
+  async 'doublexp.set'(i) {
+    const channel = i.options.getChannel('channel', true);
+    const multiplier = i.options.getNumber('multiplier') ?? 2;
+    updateConfig((d) => {
+      d.channelMultipliers[channel.id] = multiplier;
+    });
+    await respond(i, { content: `✅ <#${channel.id}> (and its threads/posts): reactions and message XP are worth **${multiplier}x**.` });
+  },
+
+  async 'doublexp.remove'(i) {
+    const channel = i.options.getChannel('channel', true);
+    updateConfig((d) => {
+      delete d.channelMultipliers[channel.id];
+    });
+    await respond(i, { content: `✅ <#${channel.id}> is back to normal XP.` });
+  },
+
+  async 'doublexp.list'(i) {
+    const lines = Object.entries(getConfig().channelMultipliers).map(([id, m]) => `<#${id}> ${m}x`);
+    await respond(i, { content: lines.length ? `**XP multipliers**\n${lines.join('\n')}` : 'No multiplier channels yet.' });
+  },
+
   async 'autothread.remove'(i) {
     const channel = i.options.getChannel('channel', true);
     if (!getConfig().autothread.channels[channel.id]) {
@@ -552,6 +602,53 @@ export default {
             .addStringOption((o) => o.setName('emoji').setDescription('The emoji').setRequired(true)),
         )
         .addSubcommand((s) => s.setName('list').setDescription('List emoji XP values')),
+    )
+    .addSubcommandGroup((g) =>
+      g
+        .setName('postbonus')
+        .setDescription('Flat XP for posting in a channel (e.g. +10 per tactic)')
+        .addSubcommand((s) =>
+          s
+            .setName('set')
+            .setDescription('Give XP for posting in a channel, with a cooldown')
+            .addChannelOption((o) =>
+              o.setName('channel').setDescription('Channel or forum').setRequired(true).addChannelTypes(...TEXT_CHANNELS, ChannelType.GuildForum, ChannelType.GuildMedia),
+            )
+            .addIntegerOption((o) => o.setName('xp').setDescription('XP per post').setRequired(true).setMinValue(1).setMaxValue(1000))
+            .addNumberOption((o) => o.setName('cooldown_hours').setDescription('Max once every X hours per member').setRequired(true).setMinValue(0))
+            .addStringOption((o) =>
+              o
+                .setName('requires')
+                .setDescription('What counts (default: picture/video, or any new post in a forum)')
+                .addChoices({ name: 'picture/video', value: 'media' }, { name: 'any message', value: 'any' }),
+            ),
+        )
+        .addSubcommand((s) =>
+          s
+            .setName('remove')
+            .setDescription('Stop the post bonus in a channel')
+            .addChannelOption((o) => o.setName('channel').setDescription('Channel').setRequired(true)),
+        )
+        .addSubcommand((s) => s.setName('list').setDescription('List post bonuses')),
+    )
+    .addSubcommandGroup((g) =>
+      g
+        .setName('doublexp')
+        .setDescription('Multiply reaction + message XP in a channel')
+        .addSubcommand((s) =>
+          s
+            .setName('set')
+            .setDescription('Make a channel (and its threads/posts) worth more XP')
+            .addChannelOption((o) => o.setName('channel').setDescription('Channel, forum or category').setRequired(true))
+            .addNumberOption((o) => o.setName('multiplier').setDescription('Default 2 (double)').setMinValue(0).setMaxValue(10)),
+        )
+        .addSubcommand((s) =>
+          s
+            .setName('remove')
+            .setDescription('Back to normal XP')
+            .addChannelOption((o) => o.setName('channel').setDescription('Channel').setRequired(true)),
+        )
+        .addSubcommand((s) => s.setName('list').setDescription('List XP multipliers')),
     ),
 
   async execute(interaction) {
