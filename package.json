@@ -21,5 +21,8 @@
     "better-sqlite3": "^13.0.3",
     "discord.js": "^14.27.0",
     "zod": "^4.6.5"
+  },
+  "allowScripts": {
+    "better-sqlite3": true
   }
 }
