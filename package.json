@@ -14,7 +14,8 @@
     "preview-cards": "node scripts/preview-cards.js",
     "invite": "node scripts/invite-link.js",
     "backup": "node scripts/backup-db.js",
-    "test": "node --test"
+    "test": "node --test",
+    "rebuild-xp": "node scripts/rebuild-xp.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.9",
