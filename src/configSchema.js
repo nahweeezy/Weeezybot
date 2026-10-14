@@ -57,6 +57,14 @@ const configSchema = z
       oncePerMessage: z.boolean(),
       simultaneousReactionWindowMs: z.number().int().min(0).max(60000),
     }),
+    // Chance-based XP for sending messages, capped by a per-member cooldown.
+    messageXp: z.strictObject({
+      enabled: z.boolean(),
+      chance: z.number().min(0).max(1),
+      xp: z.number().int().min(0).max(1000),
+      cooldownMinutes: z.number().min(0).max(24 * 60 * 7),
+      onlyXpChannels: z.boolean(),
+    }),
     rating: z.strictObject({
       min: z.number().int().min(0),
       max: z.number().int().min(1),

@@ -14,6 +14,7 @@ const reasonOption = (o) => o.setName('reason').setDescription('Why (saved in th
 function describeEvent(e) {
   const amount = `\`${e.amount >= 0 ? '+' : ''}${formatNumber(e.amount)}\``;
   const when = `<t:${Math.floor(e.created_at / 1000)}:R>`;
+  if (e.kind === 'message') return `${amount} 💬 message in <#${e.channel_id}> ${when}`;
   if (e.kind === 'thread_bonus') return `${amount} ${e.emoji ?? ''} thread bonus in <#${e.channel_id}> ${when}`;
   if (e.kind === 'reaction') {
     return `${amount} ${e.emoji ?? ''} from <@${e.giver_id}> in <#${e.channel_id}> ${when}`;
