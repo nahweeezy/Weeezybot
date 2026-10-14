@@ -77,7 +77,10 @@ client.once(Events.ClientReady, async () => {
 
     if (process.env.REBUILD_SKIP_ROLES !== '1') {
       console.log('\nUpdating tier roles...');
-      const r = await syncAllMembers(guild);
+      console.log('(Discord rate-limits role changes, so big servers take a while. The XP is already saved.)');
+      const r = await syncAllMembers(guild, {
+        onProgress: ({ checked, total, changed }) => console.log(`  roles: ${checked}/${total} members checked, ${changed} updated`),
+      });
       console.log(`Checked ${r.checked} members, changed ${r.changed}${r.failed ? `, ${r.failed} failed` : ''}.`);
     }
     console.log('\nDone. Start the bot normally again.');
