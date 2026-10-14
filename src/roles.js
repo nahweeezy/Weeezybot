@@ -87,8 +87,9 @@ export async function syncUsers(guild, userIds, reason) {
 }
 
 /** Walk every member of the server and fix their tier role. Used by /config sync-roles. */
-export async function syncAllMembers(guild) {
+export async function syncAllMembers(guild, { onProgress } = {}) {
   const members = await guild.members.fetch();
+  const total = members.filter((m) => !m.user.bot).size;
   let changed = 0;
   let failed = 0;
   let checked = 0;
@@ -97,6 +98,7 @@ export async function syncAllMembers(guild) {
     checked++;
     try {
       if (await syncMemberTier(member, 'Tier role sync')) changed++;
+      if (onProgress && checked % 50 === 0) onProgress({ checked, total, changed });
     } catch (err) {
       failed++;
       log.warn(`Role sync failed for ${member.user.tag}: ${err.message}`);
