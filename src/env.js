@@ -15,6 +15,14 @@ export function guildId() {
 /** Environment the bot needs to start; throws a readable error if something is missing. */
 export function readBotEnv() {
   const missing = ['DISCORD_TOKEN', 'GUILD_ID'].filter((key) => !process.env[key]);
-  if (missing.length) throw new Error(`Missing environment variable(s): ${missing.join(', ')}. Copy .env.example to .env and fill it in.`);
+  if (missing.length) {
+    // Point at the likely mistake: no .env at all, or one saved under a slightly different name.
+    const dir = path.dirname(envFile);
+    const lookalikes = fs.readdirSync(dir).filter((f) => /env/i.test(f) && f !== '.env' && f !== '.env.example');
+    const where = fs.existsSync(envFile)
+      ? `${envFile} exists but doesn't set them`
+      : `no file at ${envFile}${lookalikes.length ? ` (found ${lookalikes.join(', ')}: rename it to .env)` : ''}`;
+    throw new Error(`Missing environment variable(s): ${missing.join(', ')}. ${where}. Copy .env.example to .env and fill it in.`);
+  }
   return { token: process.env.DISCORD_TOKEN, guildId: process.env.GUILD_ID };
 }
