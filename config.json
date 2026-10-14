@@ -186,6 +186,7 @@
     "assignStartingTierOnJoin": true
   },
   "rankup": {
+    "enabled": false,
     "postIn": "source",
     "channelId": "",
     "deleteAfterSeconds": 30,
@@ -233,8 +234,9 @@
       "cdn\\.discordapp\\.com/attachments/",
       "media\\.discordapp\\.net/attachments/"
     ],
-    "mediaOnlyNotice": "Hey {displayName}! {channel} is media-only, so your text message was removed. Post a screenshot or clip and chat about it in the thread that opens under it. 🔥",
-    "mediaOnlyNoticeCooldownMinutes": 10,
+    "mediaOnlyNotice": "{mention} Make sure you're only posting pictures/video in this chat! If you'd like to discuss, click the thread you're replying to",
+    "mediaOnlyNoticeCooldownMinutes": 0,
+    "mediaOnlyNoticeDeleteSeconds": 10,
     "exemptRoleIds": [],
     "threadBonus": {
       "enabled": true,
@@ -248,6 +250,18 @@
       "message": "Discuss {displayName}'s post here. {displayName}, tap the button when you're done.",
       "lock": false
     }
+  },
+  "recap": {
+    "enabled": true,
+    "channelId": "",
+    "dayOfWeek": 0,
+    "hour": 18,
+    "minute": 0,
+    "timezone": "",
+    "lookbackDays": 7,
+    "count": 5,
+    "maxReactorsShown": 15,
+    "message": "🏆 **Weekly Recap** · the most reacted posts in the server this week"
   },
   "leaderboard": {
     "pageSize": 10

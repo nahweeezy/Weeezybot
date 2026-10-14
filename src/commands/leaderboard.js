@@ -8,7 +8,7 @@ import { formatNumber } from '../util.js';
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 /** Button IDs look like "lb:<ownerId>:<page>" so the buttons work without any stored state. */
-function buildPage(requestedPage, ownerId) {
+export function buildPage(requestedPage, ownerId) {
   const cfg = getConfig();
   const size = cfg.leaderboard.pageSize;
   const total = countRanked();

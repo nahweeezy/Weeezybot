@@ -7,6 +7,7 @@ import { readBotEnv } from './env.js';
 import { commandDefinitions, handleInteraction } from './interactions.js';
 import { log } from './logger.js';
 import { flushAllRankUps } from './rankup.js';
+import { startRecapSchedule, trackReactionAdd, trackReactionRemove, trackReactionRemoveAll, trackReactionRemoveEmoji } from './recap.js';
 import { flushAllReactionBatches, handleReactionAdd, xpChannelIds } from './reactionXp.js';
 import { ensureTierRoles, syncMemberTier, syncUsers } from './roles.js';
 
@@ -50,9 +51,10 @@ function watchConfig() {
 
 function warnAboutSetup() {
   const cfg = getConfig();
-  if (cfg.rankup.postIn === 'channel' && !cfg.rankup.channelId) log.warn('No rank-up channel set: use /config rankup-channel.');
+  if (cfg.rankup.enabled && cfg.rankup.postIn === 'channel' && !cfg.rankup.channelId) log.warn('No rank-up channel set: use /config rankup-channel.');
   if (!xpChannelIds(cfg).size) log.warn('No XP channels yet: use /config xpchannels add and /config autothread add.');
   if (!cfg.adminRoleId) log.warn('No admin role set: only Discord Administrators can use admin commands (/config admin-role).');
+  if (cfg.recap.enabled && !cfg.recap.channelId) log.warn('No weekly recap channel set: use /config recap-channel.');
 }
 
 client.once(Events.ClientReady, async (c) => {
@@ -72,13 +74,27 @@ client.once(Events.ClientReady, async (c) => {
   resyncAfterCurveChange(); // in case the curve was edited while the bot was offline
   await applySlowmodes(guild);
   watchConfig();
+  startRecapSchedule(guild);
   warnAboutSetup();
   log.info('Ready.');
 });
 
 client.on(Events.MessageReactionAdd, (reaction, user) => {
   handleReactionAdd(reaction, user).catch((err) => log.error('Reaction handler failed:', err));
+  trackReactionAdd(reaction, user).catch((err) => log.error('Recap tracking failed:', err));
 });
+
+// Removed reactions don't take XP away, but they do drop out of the weekly recap counts.
+const safely = (fn) => (...args) => {
+  try {
+    fn(...args);
+  } catch (err) {
+    log.error('Recap tracking failed:', err);
+  }
+};
+client.on(Events.MessageReactionRemove, safely(trackReactionRemove));
+client.on(Events.MessageReactionRemoveAll, safely(trackReactionRemoveAll));
+client.on(Events.MessageReactionRemoveEmoji, safely(trackReactionRemoveEmoji));
 
 client.on(Events.MessageCreate, (message) => {
   handleMessageCreate(message).catch((err) => log.error('Message handler failed:', err));

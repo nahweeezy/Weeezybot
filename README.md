@@ -20,3 +20,7 @@ npm start
 fill in .env first. then use /config in discord to set channels.
 
 settings are in config.json. `npm run xp-table` shows the rating curve.
+
+/ranks shows the top 10. it posts a recap of the most reacted posts every sunday.
+
+on a host set `CONFIG_PATH=data/config.json` in .env. that way your settings dont clash with git pulls.

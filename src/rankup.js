@@ -26,6 +26,7 @@ export function recordRatingChange(guild, userId, oldRating, newRating, { announ
     return;
   }
   const cfg = getConfig().rankup;
+  if (!cfg.enabled) return; // rank-up messages switched off entirely
   const hasTarget = cfg.channelId || (cfg.postIn === 'source' && sourceChannelId);
   if (!announce || newRating <= oldRating || !hasTarget) return;
 

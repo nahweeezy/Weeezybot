@@ -73,6 +73,7 @@ const configSchema = z
       assignStartingTierOnJoin: z.boolean(),
     }),
     rankup: z.strictObject({
+      enabled: z.boolean(), // false = never post rank-up messages (roles still update)
       postIn: z.enum(['source', 'channel']),
       channelId: optionalSnowflake,
       deleteAfterSeconds: z.number().min(0).max(3600),
@@ -97,6 +98,7 @@ const configSchema = z
       mediaLinkPatterns: z.array(z.string().min(1)),
       mediaOnlyNotice: z.string().max(1800),
       mediaOnlyNoticeCooldownMinutes: z.number().min(0),
+      mediaOnlyNoticeDeleteSeconds: z.number().min(0).max(600),
       exemptRoleIds: z.array(snowflake),
       // Bot reacts to posts that get an auto-thread and gives the author XP.
       // Button posted in each auto-thread so the original poster can close it.
@@ -112,6 +114,18 @@ const configSchema = z
         xp: z.number().int().min(0).max(10000),
         cooldownHours: z.number().min(0).max(24 * 365),
       }),
+    }),
+    recap: z.strictObject({
+      enabled: z.boolean(),
+      channelId: optionalSnowflake,
+      dayOfWeek: z.number().int().min(0).max(6), // 0 = Sunday
+      hour: z.number().int().min(0).max(23),
+      minute: z.number().int().min(0).max(59),
+      timezone: z.string().refine(validTimezone, 'unknown timezone (use e.g. "America/New_York", or "" for the host clock)'),
+      lookbackDays: z.number().min(1).max(31),
+      count: z.number().int().min(1).max(10),
+      maxReactorsShown: z.number().int().min(1).max(50),
+      message: z.string().max(1500),
     }),
     leaderboard: z.strictObject({
       pageSize: z.number().int().min(1).max(25),
@@ -173,6 +187,16 @@ const configSchema = z
       }
     });
   });
+
+function validTimezone(tz) {
+  if (tz === '') return true;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export class ConfigError extends Error {}
 

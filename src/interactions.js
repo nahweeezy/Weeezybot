@@ -3,13 +3,14 @@ import { MessageFlags } from 'discord.js';
 import card from './commands/card.js';
 import config from './commands/config.js';
 import leaderboard from './commands/leaderboard.js';
+import ranks from './commands/ranks.js';
 import xp from './commands/xp.js';
 import { closeThreadButton } from './autothread.js';
 import { guildId } from './env.js';
 import { log } from './logger.js';
 import { isAdmin } from './permissions.js';
 
-const commandList = [card, leaderboard, xp, config];
+const commandList = [card, leaderboard, ranks, xp, config];
 const commands = new Map(commandList.map((c) => [c.data.name, c]));
 
 /** JSON definitions to register with Discord. */

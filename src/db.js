@@ -62,6 +62,28 @@ const MIGRATIONS = [
   CREATE INDEX idx_seen_receiver_giver ON reactions_seen (receiver_id, giver_id);
   CREATE INDEX idx_seen_receiver_emoji ON reactions_seen (receiver_id, emoji);
   `,
+  `
+  -- Every reaction anywhere in the server (not just XP channels), for the weekly recap.
+  -- Rows are removed when the reaction is removed.
+  CREATE TABLE message_reactions (
+    message_id         TEXT NOT NULL,
+    user_id            TEXT NOT NULL,
+    emoji              TEXT NOT NULL,      -- stable key (unicode char or custom emoji ID)
+    emoji_display      TEXT NOT NULL,
+    channel_id         TEXT NOT NULL,
+    author_id          TEXT NOT NULL,
+    message_created_at INTEGER NOT NULL,
+    created_at         INTEGER NOT NULL,
+    PRIMARY KEY (message_id, user_id, emoji)
+  ) WITHOUT ROWID;
+  CREATE INDEX idx_mr_message_time ON message_reactions (message_created_at);
+
+  -- Small key/value store (e.g. when the last weekly recap was posted).
+  CREATE TABLE meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+  );
+  `,
 ];
 
 let db = null;
@@ -122,6 +144,28 @@ function init() {
     recentEvents: db.prepare('SELECT * FROM xp_events WHERE receiver_id = ? ORDER BY id DESC LIMIT ?'),
     allUsers: db.prepare('SELECT user_id, xp, rating FROM users'),
     setRating: db.prepare('UPDATE users SET rating = ? WHERE user_id = ?'),
+    addMessageReaction: db.prepare(`
+      INSERT OR IGNORE INTO message_reactions
+        (message_id, user_id, emoji, emoji_display, channel_id, author_id, message_created_at, created_at)
+      VALUES (@messageId, @userId, @emoji, @emojiDisplay, @channelId, @authorId, @messageCreatedAt, @now)`),
+    removeMessageReaction: db.prepare('DELETE FROM message_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?'),
+    removeMessageEmoji: db.prepare('DELETE FROM message_reactions WHERE message_id = ? AND emoji = ?'),
+    removeMessageAll: db.prepare('DELETE FROM message_reactions WHERE message_id = ?'),
+    topMessages: db.prepare(`
+      SELECT message_id, channel_id, author_id, COUNT(*) AS total, COUNT(DISTINCT user_id) AS people
+      FROM message_reactions WHERE message_created_at >= ?
+      GROUP BY message_id ORDER BY total DESC, people DESC, MIN(created_at) ASC LIMIT ?`),
+    messageReactors: db.prepare(
+      'SELECT user_id FROM message_reactions WHERE message_id = ? GROUP BY user_id ORDER BY MIN(created_at)',
+    ),
+    messageEmojis: db.prepare(`
+      SELECT emoji_display, COUNT(*) AS n FROM message_reactions WHERE message_id = ?
+      GROUP BY emoji ORDER BY n DESC, MIN(created_at)`),
+    pruneMessageReactions: db.prepare('DELETE FROM message_reactions WHERE message_created_at < ?'),
+    getMeta: db.prepare('SELECT value FROM meta WHERE key = ?'),
+    setMeta: db.prepare(
+      'INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value',
+    ),
   };
 
   tx = {
@@ -316,4 +360,46 @@ function recalcRatings() {
 export function recalculateRatings() {
   ensure();
   return tx.recalc();
+}
+
+// ---------------------------------------------------------------------------
+// Server-wide reaction tracking (weekly recap)
+// ---------------------------------------------------------------------------
+
+export function recordMessageReaction({ messageId, userId, emoji, emojiDisplay, channelId, authorId, messageCreatedAt, now = Date.now() }) {
+  ensure();
+  stmts.addMessageReaction.run({ messageId, userId, emoji, emojiDisplay, channelId, authorId, messageCreatedAt, now });
+}
+
+/** Forget a removed reaction. Pass userId + emoji for one reaction, emoji alone for "remove emoji", neither for "remove all". */
+export function removeMessageReactions(messageId, { userId, emoji } = {}) {
+  ensure();
+  if (userId && emoji) stmts.removeMessageReaction.run(messageId, userId, emoji);
+  else if (emoji) stmts.removeMessageEmoji.run(messageId, emoji);
+  else stmts.removeMessageAll.run(messageId);
+}
+
+/** Most-reacted messages posted since `since` (ms), with who reacted and an emoji breakdown. */
+export function getTopMessages(since, limit) {
+  ensure();
+  return stmts.topMessages.all(since, limit).map((row) => ({
+    ...row,
+    reactors: stmts.messageReactors.all(row.message_id).map((r) => r.user_id),
+    emojis: stmts.messageEmojis.all(row.message_id),
+  }));
+}
+
+export function pruneMessageReactions(before) {
+  ensure();
+  return stmts.pruneMessageReactions.run(before).changes;
+}
+
+export function getMeta(key) {
+  ensure();
+  return stmts.getMeta.get(key)?.value ?? null;
+}
+
+export function setMeta(key, value) {
+  ensure();
+  stmts.setMeta.run(key, String(value));
 }

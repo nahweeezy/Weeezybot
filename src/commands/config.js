@@ -6,6 +6,7 @@ import { CONFIG_PATH, getConfig, reloadConfig, updateConfig } from '../config.js
 import { ConfigError } from '../configSchema.js';
 import { normalizeEmoji } from '../emoji.js';
 import { formatXpTable } from '../rating.js';
+import { postRecap } from '../recap.js';
 import { syncAllMembers } from '../roles.js';
 import { formatNumber } from '../util.js';
 
@@ -337,6 +338,42 @@ const handlers = {
     await respond(i, { content: `✅ ${existed ? 'Updated' : 'Enabled'} auto-threads: ${describeAutothread(channel.id, getConfig())}${missingPerms(channel, needed)}` });
   },
 
+  async 'autothread.mediaonly'(i) {
+    const channel = i.options.getChannel('channel', true);
+    const enabled = i.options.getBoolean('enabled', true);
+    updateConfig((d) => {
+      d.autothread.channels[channel.id] = { ...(d.autothread.channels[channel.id] ?? {}), mediaOnly: enabled };
+    });
+    const warn = enabled ? missingPerms(channel, { 'Manage Messages': PermissionFlagsBits.ManageMessages }) : '';
+    await respond(i, {
+      content: enabled
+        ? `✅ <#${channel.id}> is now media-only. Text-only messages get deleted with a short notice.${warn}`
+        : `✅ Media-only mode is off in <#${channel.id}>.`,
+    });
+  },
+
+  async 'recap-channel'(i) {
+    const channel = i.options.getChannel('channel', true);
+    updateConfig((d) => {
+      d.recap.channelId = channel.id;
+      d.recap.enabled = true;
+    });
+    const rc = getConfig().recap;
+    const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][rc.dayOfWeek];
+    const time = `${String(rc.hour).padStart(2, '0')}:${String(rc.minute).padStart(2, '0')}${rc.timezone ? ` ${rc.timezone}` : ' (bot host time)'}`;
+    const warn = missingPerms(channel, {
+      'Send Messages': PermissionFlagsBits.SendMessages,
+      'Embed Links': PermissionFlagsBits.EmbedLinks,
+    });
+    await respond(i, { content: `✅ The weekly recap will be posted in <#${channel.id}> every ${day} at ${time}. Try it now with \`/config recap-now\`.${warn}` });
+  },
+
+  async 'recap-now'(i) {
+    await i.deferReply({ flags: MessageFlags.Ephemeral });
+    const status = await postRecap(i.guild);
+    await i.editReply({ content: `Recap: ${status}.` });
+  },
+
   async 'autothread.remove'(i) {
     const channel = i.options.getChannel('channel', true);
     if (!getConfig().autothread.channels[channel.id]) {
@@ -435,6 +472,13 @@ export default {
         .addRoleOption((o) => o.setName('role').setDescription('Role').setRequired(true)),
     )
     .addSubcommand((s) => s.setName('sync-roles').setDescription('Give every member the right tier role (slow on big servers)'))
+    .addSubcommand((s) =>
+      s
+        .setName('recap-channel')
+        .setDescription('Set where the weekly recap of the most-reacted posts goes')
+        .addChannelOption((o) => o.setName('channel').setDescription('Channel, e.g. #general').setRequired(true).addChannelTypes(...TEXT_CHANNELS)),
+    )
+    .addSubcommand((s) => s.setName('recap-now').setDescription('Post the weekly recap right now (for testing)'))
     .addSubcommandGroup((g) =>
       g
         .setName('xpchannels')
@@ -474,6 +518,13 @@ export default {
             .addBooleanOption((o) => o.setName('media_only').setDescription('Delete text-only messages and DM the author a note'))
             .addIntegerOption((o) => o.setName('slowmode').setDescription('Slow mode in seconds (0 = off)').setMinValue(0).setMaxValue(21600))
             .addIntegerOption((o) => o.setName('archive_after').setDescription('Archive threads after inactivity').addChoices(...ARCHIVE_CHOICES)),
+        )
+        .addSubcommand((s) =>
+          s
+            .setName('mediaonly')
+            .setDescription('Turn media-only mode on or off (text-only messages get deleted)')
+            .addChannelOption((o) => o.setName('channel').setDescription('Channel').setRequired(true).addChannelTypes(...TEXT_CHANNELS))
+            .addBooleanOption((o) => o.setName('enabled').setDescription('On or off').setRequired(true)),
         )
         .addSubcommand((s) =>
           s

@@ -14,7 +14,7 @@ const H = 860;
 const CARD = { x: 20, y: 20, w: 560, h: 820 };
 
 /** The classic FC card outline: notched top corners, straight sides, tapered bottom. */
-function shieldPath(ctx, x, y, w, h) {
+export function shieldPath(ctx, x, y, w, h) {
   const notch = w * 0.1;
   ctx.beginPath();
   ctx.moveTo(x + notch, y);
@@ -28,17 +28,17 @@ function shieldPath(ctx, x, y, w, h) {
   ctx.closePath();
 }
 
-function hexToRgba(hex, alpha) {
+export function hexToRgba(hex, alpha) {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
-function font(weight, size) {
+export function font(weight, size) {
   return `${weight} ${size}px ${FONT}, sans-serif`;
 }
 
 /** Shrink the font until the text fits maxWidth. */
-function fitText(ctx, text, weight, size, maxWidth, minSize = 18) {
+export function fitText(ctx, text, weight, size, maxWidth, minSize = 18) {
   let s = size;
   ctx.font = font(weight, s);
   while (s > minSize && ctx.measureText(text).width > maxWidth) {
@@ -60,7 +60,7 @@ function drawShine(ctx) {
   ctx.fillRect(0, 0, W, H);
 }
 
-function drawRays(ctx, color) {
+export function drawRays(ctx, color) {
   const cx = W * 0.62;
   const cy = H * 0.27;
   const count = 28;
@@ -95,7 +95,7 @@ function drawHolo(ctx) {
   ctx.restore();
 }
 
-function drawCircleImage(ctx, image, cx, cy, r) {
+export function drawCircleImage(ctx, image, cx, cy, r) {
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -104,7 +104,7 @@ function drawCircleImage(ctx, image, cx, cy, r) {
   ctx.restore();
 }
 
-async function tryLoad(buffer) {
+export async function tryLoad(buffer) {
   if (!buffer) return null;
   try {
     return await loadImage(buffer);

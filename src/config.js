@@ -16,14 +16,46 @@ let current = null;
 let lastDiskText = null; // file contents as of our last read/write
 const listeners = new Set();
 
+// Objects whose keys are user data (channel IDs, emojis, ratings), not settings: never fill these.
+const USER_RECORDS = new Set(['xp.emojiValues', 'autothread.channels', 'rating.curve.table']);
+const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+/**
+ * Add settings that exist in the repo's config.json but are missing from the live one
+ * (new options from an update). Existing values are never changed. Returns true if anything was added.
+ */
+function fillMissingSettings(live, defaults, prefix = '') {
+  let added = false;
+  for (const [key, value] of Object.entries(defaults)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (!(key in live)) {
+      live[key] = structuredClone(value);
+      added = true;
+    } else if (isPlainObject(value) && isPlainObject(live[key]) && !USER_RECORDS.has(path)) {
+      added = fillMissingSettings(live[key], value, path) || added;
+    }
+  }
+  return added;
+}
+
 function readFromDisk() {
   if (!fs.existsSync(CONFIG_PATH)) {
     // First boot with a custom CONFIG_PATH: seed it from the repo's config.json.
     fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
     fs.copyFileSync(BUNDLED_CONFIG, CONFIG_PATH);
   }
-  const text = fs.readFileSync(CONFIG_PATH, 'utf8');
-  const cfg = validateConfig(JSON.parse(text));
+  let text = fs.readFileSync(CONFIG_PATH, 'utf8');
+  const raw = JSON.parse(text);
+  if (CONFIG_PATH !== BUNDLED_CONFIG) {
+    const defaults = JSON.parse(fs.readFileSync(BUNDLED_CONFIG, 'utf8'));
+    if (fillMissingSettings(raw, defaults)) {
+      validateConfig(raw);
+      text = `${JSON.stringify(raw, null, 2)}\n`;
+      fs.writeFileSync(CONFIG_PATH, text, 'utf8');
+      console.log(`[config] added new settings from ${path.basename(BUNDLED_CONFIG)} to ${CONFIG_PATH}`);
+    }
+  }
+  const cfg = validateConfig(raw);
   lastDiskText = text;
   return cfg;
 }

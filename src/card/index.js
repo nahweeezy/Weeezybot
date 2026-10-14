@@ -9,7 +9,7 @@ import { renderCard } from './render.js';
 
 export const CARD_FILE_NAME = 'card.png';
 
-async function fetchImage(url) {
+export async function fetchImage(url) {
   if (!url) return null;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -20,7 +20,7 @@ async function fetchImage(url) {
 }
 
 /** The card font has no emoji glyphs, so strip them rather than drawing empty boxes. */
-function cleanName(name) {
+export function cleanName(name) {
   const cleaned = name
     .replace(/[\p{Extended_Pictographic}‍️⃣]/gu, '')
     .replace(/\s+/g, ' ')
@@ -29,7 +29,7 @@ function cleanName(name) {
 }
 
 /** 950 -> "950", 12,400 -> "12.4K", 1,250,000 -> "1.3M" (keeps card stats short). */
-function compact(n) {
+export function compact(n) {
   if (n < 10_000) return formatNumber(n);
   if (n < 1_000_000) return `${(n / 1000).toFixed(n < 100_000 ? 1 : 0)}K`;
   return `${(n / 1_000_000).toFixed(1)}M`;

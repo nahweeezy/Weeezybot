@@ -77,3 +77,34 @@ for (const [i, png] of rendered.entries()) {
 const sheetFile = path.join(outDir, 'all-tiers.png');
 fs.writeFileSync(sheetFile, sheet.toBuffer('image/png'));
 console.log(`wrote ${path.relative(ROOT_DIR, sheetFile)}`);
+
+// Sample /ranks table: ten players spread across the tiers.
+const { renderRankings } = await import('../src/card/rankings.js');
+const { tierForRating } = await import('../src/rating.js');
+const sample = [
+  ['TheGOAT', 99], ['EliteEnjoyer', 94], ['Weeezy', 91], ['SquadGoals', 88], ['TacticsTom', 86],
+  ['WalkoutWill', 82], ['PackLuckPete', 77], ['MetaMike', 71], ['IconHunter', 66], ['FreshSigning', 58],
+];
+const ranksPng = await renderRankings({
+  serverName: 'Nahweeezy / DTO',
+  badge: null,
+  subtitle: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  rows: sample.map(([name, rating], i) => {
+    const xp = xpForRating(rating, cfg);
+    return {
+      position: i + 1,
+      name: name.toUpperCase(),
+      rating,
+      tier: tierForRating(rating, cfg),
+      avatar: fakeAvatar(i * 36),
+      stats: {
+        xp: xp >= 10000 ? `${(xp / 1000).toFixed(1)}K` : xp.toLocaleString('en-US'),
+        reactions: String(Math.round(xp * 0.7)),
+        fans: String(Math.round(Math.sqrt(xp) * 3)),
+        hot: String(Math.round(xp * 0.2)),
+      },
+    };
+  }),
+});
+fs.writeFileSync(path.join(outDir, 'ranks.png'), ranksPng);
+console.log('wrote card-previews/ranks.png');

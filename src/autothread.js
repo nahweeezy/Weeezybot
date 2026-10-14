@@ -172,22 +172,34 @@ async function enforceMediaOnly(message, cfg) {
     return;
   }
 
-  // Don't DM the same person over and over if they keep trying.
+  // Optional per-person cooldown so someone spamming text doesn't get a notice every time.
   const now = Date.now();
   const cooldown = cfg.autothread.mediaOnlyNoticeCooldownMinutes * 60 * 1000;
-  if (now - (lastNoticeAt.get(message.author.id) ?? 0) < cooldown) return;
-  lastNoticeAt.set(message.author.id, now);
-  if (lastNoticeAt.size > 5000) {
-    for (const [id, at] of lastNoticeAt) if (now - at >= cooldown) lastNoticeAt.delete(id);
+  if (cooldown > 0) {
+    if (now - (lastNoticeAt.get(message.author.id) ?? 0) < cooldown) return;
+    lastNoticeAt.set(message.author.id, now);
+    if (lastNoticeAt.size > 5000) {
+      for (const [id, at] of lastNoticeAt) if (now - at >= cooldown) lastNoticeAt.delete(id);
+    }
   }
 
   const text = fillTemplate(cfg.autothread.mediaOnlyNotice, {
+    mention: `<@${message.author.id}>`,
     username: message.author.username,
     displayName: message.member?.displayName ?? message.author.displayName,
     channel: `<#${message.channelId}>`,
     server: message.guild.name,
   }).trim();
-  if (text) await message.author.send({ content: text }).catch(() => {}); // DMs closed: nothing to do
+  if (!text) return;
+
+  // Short-lived notice in the channel itself, removed after mediaOnlyNoticeDeleteSeconds.
+  try {
+    const notice = await message.channel.send({ content: text, allowedMentions: { users: [message.author.id] } });
+    const seconds = cfg.autothread.mediaOnlyNoticeDeleteSeconds;
+    if (seconds > 0) setTimeout(() => notice.delete().catch(() => {}), seconds * 1000);
+  } catch (err) {
+    log.warn(`Couldn't post the media-only notice in #${message.channel.name}: ${err.message}`);
+  }
 }
 
 /** Apply configured slow mode to every auto-thread channel (null = leave the channel alone). */
