@@ -8,6 +8,9 @@ import { validateConfig } from './configSchema.js';
 
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BUNDLED_CONFIG = path.join(ROOT_DIR, 'config.json');
+// Read-only defaults shipped with the code. The bot never edits this file; settings added by an
+// update live here and are copied into the live config on startup if it doesn't have them yet.
+const DEFAULTS_FILE = path.join(ROOT_DIR, 'config.defaults.json');
 
 // CONFIG_PATH lets a host keep the live config on a persistent volume next to the database.
 export const CONFIG_PATH = path.resolve(process.env.CONFIG_PATH || BUNDLED_CONFIG);
@@ -21,7 +24,7 @@ const USER_RECORDS = new Set(['xp.emojiValues', 'autothread.channels', 'rating.c
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 /**
- * Add settings that exist in the repo's config.json but are missing from the live one
+ * Add settings that exist in config.defaults.json but are missing from the live config
  * (new options from an update). Existing values are never changed. Returns true if anything was added.
  */
 function fillMissingSettings(live, defaults, prefix = '') {
@@ -40,20 +43,17 @@ function fillMissingSettings(live, defaults, prefix = '') {
 
 function readFromDisk() {
   if (!fs.existsSync(CONFIG_PATH)) {
-    // First boot with a custom CONFIG_PATH: seed it from the repo's config.json.
+    // First boot: seed from the repo's config.json (or the plain defaults if there isn't one).
     fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
-    fs.copyFileSync(BUNDLED_CONFIG, CONFIG_PATH);
+    fs.copyFileSync(fs.existsSync(BUNDLED_CONFIG) ? BUNDLED_CONFIG : DEFAULTS_FILE, CONFIG_PATH);
   }
   let text = fs.readFileSync(CONFIG_PATH, 'utf8');
   const raw = JSON.parse(text);
-  if (CONFIG_PATH !== BUNDLED_CONFIG) {
-    const defaults = JSON.parse(fs.readFileSync(BUNDLED_CONFIG, 'utf8'));
-    if (fillMissingSettings(raw, defaults)) {
-      validateConfig(raw);
-      text = `${JSON.stringify(raw, null, 2)}\n`;
-      fs.writeFileSync(CONFIG_PATH, text, 'utf8');
-      console.log(`[config] added new settings from ${path.basename(BUNDLED_CONFIG)} to ${CONFIG_PATH}`);
-    }
+  // Settings added by an update are copied in from config.defaults.json; existing values stay.
+  if (fs.existsSync(DEFAULTS_FILE) && fillMissingSettings(raw, JSON.parse(fs.readFileSync(DEFAULTS_FILE, 'utf8')))) {
+    text = `${JSON.stringify(raw, null, 2)}\n`;
+    fs.writeFileSync(CONFIG_PATH, text, 'utf8');
+    console.log(`[config] added new settings from config.defaults.json to ${CONFIG_PATH}`);
   }
   const cfg = validateConfig(raw);
   lastDiskText = text;
